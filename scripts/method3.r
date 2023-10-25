@@ -11,27 +11,22 @@ simTweedieTest <-
   } 
 
 
+
 # Assignment 2:  
 # Load the necessary packages
 library(tweedie)
-library(doParallel)
-
-# Initialize a parallel backend with the desired number of cores
-num_cores <- 2
-cl <- makeCluster(num_cores)
-registerDoParallel(cl)
 
 # Define the function to perform a single Tweedie test
 performSingleTweedieTest <- function(N) {
   simTweedieTest(N)
 }
 
-# Modified MTweedieTests function to use parallelization
+# Define the MTweedieTests function
 MTweedieTests <- function(N, M, sig) {
-  results <- foreach(j = 1:M, .combine = 'c') %dopar% {
+  results <- lapply(1:M, function(j) {
     performSingleTweedieTest(N)
-  }
-  sum(results < sig) / M
+  })
+  sum(unlist(results) < sig) / M
 }
 
 # Create a data frame with parameters
@@ -46,8 +41,6 @@ for (i in 1:nrow(df)) {
   df$share_reject[i] <- MTweedieTests(N = df$N[i], M = df$M[i], sig = 0.05)
 }
 
-# Stop the parallel backend
-stopCluster(cl)
 
 
 # Assignment 3:  
