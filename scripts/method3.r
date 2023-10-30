@@ -1,6 +1,8 @@
-# Assignment 1:  
+## Method 3
 library(tweedie) 
 library(ggplot2)
+library(doParallel)
+library(foreach)
 
 simTweedieTest <-  
   function(N){ 
@@ -10,37 +12,32 @@ simTweedieTest <-
     )$p.value 
   } 
 
-
-
-# Assignment 2:  
-# Load the necessary packages
-library(tweedie)
-
-# Define the function to perform a single Tweedie test
-performSingleTweedieTest <- function(N) {
-  simTweedieTest(N)
-}
-
-# Define the MTweedieTests function
+# Define MTweedieTests function with parallel execution
 MTweedieTests <- function(N, M, sig) {
-  results <- lapply(1:M, function(j) {
-    performSingleTweedieTest(N)
-  })
-  sum(unlist(results) < sig) / M
+  results <- foreach(i = 1:M, .combine = '+') %do% {
+    simTweedieTest(N) < sig
+  }
+  
+  return(results / M)
 }
 
-# Create a data frame with parameters
+# Set up parallel processing using doParallel
+cl <- makeCluster(detectCores())
+registerDoParallel(cl)
+
 df <- expand.grid(
-  N = c(10, 100, 1000, 5000),
+  N = c(10, 100, 1000, 5000, 10000),
   M = 1000,
   share_reject = NA
 )
 
-# Calculate share_reject using the modified MTweedieTests function
-for (i in 1:nrow(df)) {
-  df$share_reject[i] <- MTweedieTests(N = df$N[i], M = df$M[i], sig = 0.05)
+# Parallelize the computation using MTweedieTests function
+df$share_reject <- foreach(i = 1:nrow(df), .combine = 'c') %do% {
+  MTweedieTests(N = df$N[i], M = df$M[i], sig = 0.05)
 }
 
+# Stop the parallel workers
+stopCluster(cl)
 
 
 # Assignment 3:  

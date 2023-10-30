@@ -1,9 +1,11 @@
+## Method 2
 # Assignment 1:  
 library(tweedie) 
 library(ggplot2)
 library(parallel)
 library(doParallel)
 library(foreach)
+
 
 simTweedieTest <-  
   function(N){ 
@@ -28,20 +30,18 @@ df <-
     M = 1000, 
     share_reject = NA) 
 
-# Initialize a parallel backend with the desired number of cores
-num_cores <- 2
-cl <- makeCluster(num_cores)
+
+# Set up parallel processing using doParallel
+cl <- makeCluster(detectCores())
 registerDoParallel(cl)
 
-# Parallelize the loop to calculate share_reject
-df$share_reject <- foreach(i = 1:nrow(df), .combine = 'c') %dopar% {
-  library(tweedie)
+# Parallelize the final loop using foreach
+df$share_reject <- foreach(i = 1:nrow(df), .packages = c("tweedie")) %dopar% {
   MTweedieTests(N = df$N[i], M = df$M[i], sig = 0.05)
 }
 
-# Stop the parallel backend
+# Stop the parallel workers
 stopCluster(cl)
-
 
 
 ## Assignemnt 4 
